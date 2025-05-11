@@ -1,11 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/12.0.2">
+
   <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <AssemblyName>HousePlayerTracker</AssemblyName>
+    <RootNamespace>HousePlayerTracker</RootNamespace>
+
     <Version>0.0.0.1</Version>
-    <Description>A sample plugin.</Description>
-    <PackageProjectUrl>https://github.com/goatcorp/SamplePlugin</PackageProjectUrl>
+    <Description>Track player visited in houses</Description>
+    <PackageProjectUrl>https://github.com/DoorDoorjay/RPAttendanceTracker/</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,4 +21,5 @@
       <Visible>false</Visible>
     </Content>
   </ItemGroup>
+
 </Project>

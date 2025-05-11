@@ -1,5 +1,6 @@
 ﻿using Dalamud.Configuration;
 using Dalamud.Plugin;
+using HousePlayerTracker;
 using System;
 
 namespace SamplePlugin;
