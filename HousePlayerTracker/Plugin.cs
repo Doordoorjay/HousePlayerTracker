@@ -5,7 +5,13 @@ using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using System.IO;
+using System.Text.Json;
+using Dalamud.Logging;
 using HousePlayerTracker;
+using System.Collections.Generic;
+using System;
+using Dalamud.Interface.ImGuiNotification;
 
 namespace HousePlayerTracker;
 
@@ -18,23 +24,24 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static INotificationManager Notification { get; private set; } = null!;
-
+    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     private WindowSystem windowSystem = new("HousePlayerTracker");
     private HPTMainWindow mainWindow;
+
 
     public Plugin()
     {
         mainWindow = new HPTMainWindow();
         windowSystem.AddWindow(mainWindow);
 
-        CommandManager.AddHandler("/rpat", new CommandInfo(OnCommand)
+        CommandManager.AddHandler("/housetr", new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open RP Attendance Tracker window"
+            HelpMessage = "Open House Player Tracker window"
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 
-        // ✅ 添加这两个回调，修复 validation 提示
+        // Setup menu direct
         PluginInterface.UiBuilder.OpenConfigUi += OpenConfig;
         PluginInterface.UiBuilder.OpenMainUi += OpenMain;
     }
@@ -42,7 +49,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         windowSystem.RemoveAllWindows();
-        CommandManager.RemoveHandler("/rpat");
+        CommandManager.RemoveHandler("/housetr");
         PluginInterface.UiBuilder.Draw -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= OpenConfig;
         PluginInterface.UiBuilder.OpenMainUi -= OpenMain;
@@ -58,15 +65,40 @@ public sealed class Plugin : IDalamudPlugin
         windowSystem.Draw();
     }
 
-    // ✅ 用于 OpenConfigUi
+    // OpenConfigUi
     private void OpenConfig()
     {
         mainWindow.IsOpen = true;
     }
 
-    // ✅ 用于 OpenMainUi
+    // OpenMainUi
     private void OpenMain()
     {
         mainWindow.IsOpen = true;
     }
+
+    private void LoadHousingZoneList()
+    {
+        var path = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "houseWhiteList.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                var content = File.ReadAllText(path);
+                var zoneIds = JsonSerializer.Deserialize<HashSet<uint>>(content);
+                if (zoneIds is not null)
+                    HPTMainWindow.PublicHousingZoneIds = zoneIds;
+            }
+            catch (Exception ex)
+            {
+                Plugin.Notification.AddNotification(new Notification
+                {
+                    Content = $"Failed to load houseWhiteList.json: {ex.Message}",
+                    Type = NotificationType.Error
+                });
+            }
+
+        }
+    }
+
 }

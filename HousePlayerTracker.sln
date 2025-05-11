@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPAttendanceTracker", "RPAttendanceTracker\HousePlayerTracker.csproj", "{FB2D8F2F-7D70-4C81-AE30-38218367911D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HousePlayerTracker", "HousePlayerTracker\HousePlayerTracker.csproj", "{FB2D8F2F-7D70-4C81-AE30-38218367911D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

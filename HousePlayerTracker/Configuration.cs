@@ -1,21 +1,36 @@
-﻿using Dalamud.Configuration;
+﻿using System;
+using System.IO;
+using Dalamud.Configuration;
 using Dalamud.Plugin;
-using HousePlayerTracker;
-using System;
+using Dalamud.Interface;
+using Dalamud.Game.Text;
 
-namespace SamplePlugin;
+namespace HousePlayerTracker;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 0;
+    public int Version { get; set; } = 1;
 
-    public bool IsConfigWindowMovable { get; set; } = true;
-    public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+    public string ExportDirectoryPath { get; set; } = string.Empty;
 
-    // the below exist just to make saving less cumbersome
+    [NonSerialized] private IDalamudPluginInterface? pluginInterface;
+
+    public void Initialize(IDalamudPluginInterface pi)
+    {
+        pluginInterface = pi;
+    }
+
+    public string GetResolvedExportPath()
+    {
+        if (string.IsNullOrWhiteSpace(ExportDirectoryPath))
+            return pluginInterface?.ConfigDirectory.FullName ?? "./";
+
+        return ExportDirectoryPath;
+    }
+
     public void Save()
     {
-        Plugin.PluginInterface.SavePluginConfig(this);
+        pluginInterface?.SavePluginConfig(this);
     }
 }
