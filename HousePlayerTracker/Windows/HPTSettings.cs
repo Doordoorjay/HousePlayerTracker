@@ -14,6 +14,7 @@ public class HPTSettings : Window
 {
     public HPTSettings(string name, ImGuiWindowFlags flags = ImGuiWindowFlags.None, bool forceMainWindow = false) : base(name, flags, forceMainWindow)
     {
+        // Placeholders
     }
 
     public override void Draw()
@@ -23,6 +24,6 @@ public class HPTSettings : Window
 
     private void Settings()
     {
-
+        // Placeholders
     }
 }

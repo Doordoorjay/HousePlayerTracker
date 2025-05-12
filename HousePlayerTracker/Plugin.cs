@@ -12,6 +12,7 @@ using HousePlayerTracker;
 using System.Collections.Generic;
 using System;
 using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Game.Text;
 
 namespace HousePlayerTracker;
 
@@ -24,6 +25,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static INotificationManager Notification { get; private set; } = null!;
+    [PluginService] public static IChatGui Chat { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     private WindowSystem windowSystem = new("HousePlayerTracker");
     private HPTMainWindow mainWindow;
@@ -31,6 +33,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
+
         mainWindow = new HPTMainWindow();
         windowSystem.AddWindow(mainWindow);
 

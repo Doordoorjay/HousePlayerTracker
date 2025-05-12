@@ -12,6 +12,7 @@ using Dalamud.Interface.Utility;
 using System.IO;
 using System.Text;
 using System.Globalization;
+using Dalamud.Game.Text;
 
 namespace HousePlayerTracker;
 
@@ -335,7 +336,11 @@ public class HPTMainWindow : Window
 
         if (ImGui.Button("Export CSV"))
         {
-            var path = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "visitHistory.csv");
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var filename = $"visitEntry_{timestamp}.csv";
+            var path = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, filename);
+
             var sb = new StringBuilder();
             sb.AppendLine("Name,Entered At,Left At,Duration,Entry Count");
 
@@ -347,12 +352,10 @@ public class HPTMainWindow : Window
             }
 
             File.WriteAllText(path, sb.ToString(), new UTF8Encoding(true));
-            Plugin.Notification.AddNotification(new Notification
-            {
-                Content = "Exported visitHistory.csv",
-                Type = NotificationType.Success
-            });
+
+            Plugin.Chat.Print($"Exported {visitHistory.Count} entries to: {path}");
         }
+
     }
 
     private void DrawStatusIcon(IPlayerCharacter player)
