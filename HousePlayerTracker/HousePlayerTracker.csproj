@@ -9,7 +9,7 @@
 
     <Version>0.0.0.1</Version>
     <Description>Track player visited in houses</Description>
-    <PackageProjectUrl>https://github.com/DoorDoorjay/RPAttendanceTracker/</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/DoorDoorjay/HousePlayerTracker/</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
 
