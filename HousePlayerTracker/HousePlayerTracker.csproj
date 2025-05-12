@@ -20,12 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="images\icon.png">
+    <Content Include="..\images\icon.png" Link="images\icon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="images\" />
+    </Content>
   </ItemGroup>
 
 </Project>
