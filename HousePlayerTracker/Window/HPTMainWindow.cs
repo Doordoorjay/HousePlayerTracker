@@ -11,6 +11,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using System.IO;
 using System.Text;
+using System.Globalization;
 
 namespace HousePlayerTracker;
 
@@ -36,13 +37,23 @@ public class HPTMainWindow : Window
         IsOpen = false;
     }
 
+    public class VisitEntry
+    {
+        public string Name { get; set; } = "";
+        public DateTime EnteredAt { get; set; }
+        public DateTime? LeftAt { get; set; }
+        public uint TerritoryId { get; set; }
+        public int EntryCount { get; set; } = 1;
+
+        public TimeSpan? Duration => LeftAt.HasValue ? LeftAt.Value - EnteredAt : null;
+    }
+
     public override void Draw()
     {
         currentTerritoryId = Plugin.ClientState.TerritoryType;
         ImGui.TextUnformatted($"Current Territory ID: {currentTerritoryId}");
 
         CheckTrackingOutsideHousingZone();
-
         DrawTrackingToggle();
         HandleTerritoryChange();
 
@@ -50,7 +61,6 @@ public class HPTMainWindow : Window
         DrawPlayerList();
         ImGui.Separator();
         DrawVisitHistory();
-
         DrawTrackingPopup();
     }
 
@@ -69,9 +79,8 @@ public class HPTMainWindow : Window
         }
         if (showTrackingWarning)
         {
-            ImGui.TextColored(new Vector4(1f, 1f, 0f, 1f), "Tracking will stop after exiting this house.");
+            ImGui.TextColored(new Vector4(1f, 1f, 0f, 1f), "Tracking will stop after exiting this zone.");
         }
-
     }
 
     private void DrawTrackingPopup()
@@ -104,7 +113,40 @@ public class HPTMainWindow : Window
         {
             ImGui.TextColored(new Vector4(0f, 1f, 0f, 1f), "Tracking Enabled");
             if (ImGui.Button("Stop Tracking"))
-                isTracking = false;
+            {
+                Plugin.Notification.AddNotification(new Notification
+                {
+                    Content = "Stop Tracking clicked",
+                    Type = NotificationType.Info
+                });
+
+                foreach (var entry in activeVisits.Values)
+                {
+                    entry.LeftAt ??= DateTime.Now;
+
+                    var existing = visitHistory.FirstOrDefault(v => v.Name == entry.Name);
+                    if (existing == null)
+                    {
+                        visitHistory.Add(entry);
+                    }
+                    else
+                    {
+                        // ✅ 修正：不要累加，而是保留最大值（或直接覆盖）
+                        if (entry.EnteredAt < existing.EnteredAt)
+                            existing.EnteredAt = entry.EnteredAt;
+
+                        if (entry.LeftAt > existing.LeftAt)
+                            existing.LeftAt = entry.LeftAt;
+
+                        // ✅ 替换 entryCount 而不是累加
+                        existing.EntryCount = entry.EntryCount;
+                    }
+                }
+
+
+                activeVisits.Clear();
+                StopTracking();
+            }
         }
         else
         {
@@ -113,16 +155,49 @@ public class HPTMainWindow : Window
                 isTracking = true;
         }
     }
+    private void StopTracking()
+    {
+        foreach (var entry in activeVisits.Values)
+        {
+            entry.LeftAt ??= DateTime.Now;
+
+            var existing = visitHistory.FirstOrDefault(v => v.Name == entry.Name);
+            if (existing == null)
+            {
+                visitHistory.Add(entry);
+            }
+            else
+            {
+                if (entry.EnteredAt < existing.EnteredAt)
+                    existing.EnteredAt = entry.EnteredAt;
+
+                if (entry.LeftAt > existing.LeftAt)
+                    existing.LeftAt = entry.LeftAt;
+
+                existing.EntryCount = entry.EntryCount;
+            }
+        }
+
+        activeVisits.Clear();
+        isTracking = false;
+    }
 
     private void HandleTerritoryChange()
     {
         if (lastTerritoryId != 0 && currentTerritoryId != lastTerritoryId && isTracking && !hasNotifiedExit)
         {
-            isTracking = false;
+            // ✅ 标记所有玩家离开（补丁关键）
+            foreach (var entry in activeVisits.Values)
+            {
+                entry.LeftAt = DateTime.Now;
+            }
+
+            StopTracking();
+
             hasNotifiedExit = true;
             Plugin.Notification.AddNotification(new Notification
             {
-                Content = "You left the house. Tracking stopped.",
+                Content = "You left the zone. Tracking stopped.",
                 Type = NotificationType.Warning
             });
         }
@@ -134,9 +209,10 @@ public class HPTMainWindow : Window
         lastTerritoryId = currentTerritoryId;
     }
 
+
     private void DrawPlayerList()
     {
-        ImGui.TextUnformatted("Players currently in this house:");
+        ImGui.TextUnformatted("Players currently in this zone:");
 
         var players = Plugin.ObjectTable
             .Where(obj => obj.ObjectKind == ObjectKind.Player && obj is IPlayerCharacter)
@@ -185,28 +261,37 @@ public class HPTMainWindow : Window
     {
         var currentPlayers = players.Select(p => p.Name.TextValue).ToHashSet();
 
-        foreach (var p in currentPlayers)
+        // 添加新进来的玩家（如果之前没有或之前已经离开）
+        foreach (var name in currentPlayers)
         {
-            if (!activeVisits.ContainsKey(p))
+            // 已经在列表中，且尚未离开，则不处理
+            if (activeVisits.TryGetValue(name, out var visit) && visit.LeftAt == null)
+                continue;
+
+            // 重新进来或首次进来：更新 entry count（从 history 中查找旧 count）
+            int currentCount = visitHistory.FirstOrDefault(v => v.Name == name)?.EntryCount ?? 0;
+
+            activeVisits[name] = new VisitEntry
             {
-                activeVisits[p] = new VisitEntry
-                {
-                    Name = p,
-                    EnteredAt = DateTime.Now,
-                    TerritoryId = currentTerritoryId
-                };
-            }
+                Name = name,
+                EnteredAt = DateTime.Now,
+                TerritoryId = currentTerritoryId,
+                EntryCount = currentCount + 1
+            };
         }
 
+        // 离开的玩家（不再当前场景）
         var leftPlayers = activeVisits.Keys.Where(name => !currentPlayers.Contains(name)).ToList();
-        foreach (var left in leftPlayers)
+        foreach (var name in leftPlayers)
         {
-            var entry = activeVisits[left];
-            entry.LeftAt = DateTime.Now;
-            visitHistory.Add(entry);
-            activeVisits.Remove(left);
+            if (activeVisits.TryGetValue(name, out var entry))
+            {
+                entry.LeftAt = DateTime.Now;
+            }
         }
     }
+
+
 
     private void DrawVisitHistory()
     {
@@ -218,19 +303,23 @@ public class HPTMainWindow : Window
             return;
         }
 
-        if (ImGui.BeginTable("VisitTable", 3, ImGuiTableFlags.Borders))
+        if (ImGui.BeginTable("VisitTable", 5, ImGuiTableFlags.Borders))
         {
             ImGui.TableSetupColumn("Name");
-            ImGui.TableSetupColumn("Entered At");
-            ImGui.TableSetupColumn("Left At");
+            ImGui.TableSetupColumn("First Entered");
+            ImGui.TableSetupColumn("Last Left");
+            ImGui.TableSetupColumn("Duration");
+            ImGui.TableSetupColumn("Entry Count");
             ImGui.TableHeadersRow();
 
-            foreach (var v in visitHistory)
+            foreach (var v in visitHistory.OrderBy(v => v.EnteredAt))
             {
                 ImGui.TableNextRow();
                 ImGui.TableSetColumnIndex(0); ImGui.TextUnformatted(v.Name);
                 ImGui.TableSetColumnIndex(1); ImGui.TextUnformatted(v.EnteredAt.ToString("HH:mm:ss"));
                 ImGui.TableSetColumnIndex(2); ImGui.TextUnformatted(v.LeftAt?.ToString("HH:mm:ss") ?? "-");
+                ImGui.TableSetColumnIndex(3); ImGui.TextUnformatted(v.Duration?.ToString(@"mm\:ss") ?? "-");
+                ImGui.TableSetColumnIndex(4); ImGui.TextUnformatted(v.EntryCount.ToString());
             }
 
             ImGui.EndTable();
@@ -248,11 +337,12 @@ public class HPTMainWindow : Window
         {
             var path = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "visitHistory.csv");
             var sb = new StringBuilder();
-            sb.AppendLine("Name,Entered At,Left At");
+            sb.AppendLine("Name,Entered At,Left At,Duration,Entry Count");
 
-            foreach (var v in visitHistory)
+            foreach (var v in visitHistory.OrderBy(v => v.EnteredAt))
             {
-                var line = $"{v.Name},{v.EnteredAt:yyyy-MM-dd HH:mm:ss},{v.LeftAt:yyyy-MM-dd HH:mm:ss}";
+                var durationFormatted = v.Duration?.ToString("mm\\:ss", CultureInfo.InvariantCulture) ?? "-";
+                var line = $"{v.Name},{v.EnteredAt:yyyy-MM-dd HH:mm:ss},{v.LeftAt:yyyy-MM-dd HH:mm:ss},{durationFormatted},{v.EntryCount}";
                 sb.AppendLine(line);
             }
 
@@ -274,7 +364,7 @@ public class HPTMainWindow : Window
             if (player.OnlineStatus.RowId != 0)
                 statusName = player.OnlineStatus.Value.Name.ToString();
 
-            uint iconId = 61505; // 默认 fallback 为“在线”图标
+            uint iconId = 61505;
 
             if (!string.IsNullOrEmpty(statusName) && StatusIconMap.TryGetValue(statusName, out var mapped))
                 iconId = mapped;
@@ -298,7 +388,6 @@ public class HPTMainWindow : Window
         }
         catch
         {
-            // Prevent if icon fail to load and crash the game
         }
     }
 
