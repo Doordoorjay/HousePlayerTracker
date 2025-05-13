@@ -162,26 +162,17 @@ public class HPTMainWindow : Window
         {
             entry.LeftAt ??= DateTime.Now;
 
-            var existing = visitHistory.FirstOrDefault(v => v.Name == entry.Name);
-            if (existing == null)
+            // Only add entry counts from active player if did not exist in history
+            if (!visitHistory.Any(v => v.Name == entry.Name && v.EnteredAt == entry.EnteredAt))
             {
                 visitHistory.Add(entry);
-            }
-            else
-            {
-                if (entry.EnteredAt < existing.EnteredAt)
-                    existing.EnteredAt = entry.EnteredAt;
-
-                if (entry.LeftAt > existing.LeftAt)
-                    existing.LeftAt = entry.LeftAt;
-
-                existing.EntryCount = entry.EntryCount;
             }
         }
 
         activeVisits.Clear();
         isTracking = false;
     }
+
 
     private void HandleTerritoryChange()
     {
@@ -215,12 +206,16 @@ public class HPTMainWindow : Window
     {
         ImGui.TextUnformatted("Players currently in this zone:");
 
+        // Exclude myself
+        var localName = Plugin.ClientState.LocalPlayer?.Name.TextValue;
+
         var players = Plugin.ObjectTable
             .Where(obj => obj.ObjectKind == ObjectKind.Player && obj is IPlayerCharacter)
             .OfType<IPlayerCharacter>()
-            .Where(p => p.Name.TextValue != null)
+            .Where(p => p.Name.TextValue != null && p.Name.TextValue != localName)
             .OrderBy(p => p.Name.TextValue)
             .ToList();
+
 
         if (isTracking)
         {
@@ -281,15 +276,32 @@ public class HPTMainWindow : Window
             };
         }
 
-        // 离开的玩家（不再当前场景）
+        // Leaved players
         var leftPlayers = activeVisits.Keys.Where(name => !currentPlayers.Contains(name)).ToList();
         foreach (var name in leftPlayers)
         {
             if (activeVisits.TryGetValue(name, out var entry))
             {
                 entry.LeftAt = DateTime.Now;
+
+                var existing = visitHistory.FirstOrDefault(v => v.Name == name);
+                if (existing == null)
+                {
+                    visitHistory.Add(entry);
+                }
+                else
+                {
+                    if (entry.EnteredAt < existing.EnteredAt)
+                        existing.EnteredAt = entry.EnteredAt;
+                    if (entry.LeftAt > existing.LeftAt)
+                        existing.LeftAt = entry.LeftAt;
+                    existing.EntryCount = entry.EntryCount;
+                }
+
+                activeVisits.Remove(name); // Clean them
             }
         }
+
     }
 
 
@@ -319,7 +331,7 @@ public class HPTMainWindow : Window
                 ImGui.TableSetColumnIndex(0); ImGui.TextUnformatted(v.Name);
                 ImGui.TableSetColumnIndex(1); ImGui.TextUnformatted(v.EnteredAt.ToString("HH:mm:ss"));
                 ImGui.TableSetColumnIndex(2); ImGui.TextUnformatted(v.LeftAt?.ToString("HH:mm:ss") ?? "-");
-                ImGui.TableSetColumnIndex(3); ImGui.TextUnformatted(v.Duration?.ToString(@"mm\:ss") ?? "-");
+                ImGui.TableSetColumnIndex(3); ImGui.TextUnformatted(v.Duration?.ToString(@"hh\:mm\:ss") ?? "-");
                 ImGui.TableSetColumnIndex(4); ImGui.TextUnformatted(v.EntryCount.ToString());
             }
 
@@ -346,7 +358,7 @@ public class HPTMainWindow : Window
 
             foreach (var v in visitHistory.OrderBy(v => v.EnteredAt))
             {
-                var durationFormatted = v.Duration?.ToString("mm\\:ss", CultureInfo.InvariantCulture) ?? "-";
+                var durationFormatted = v.Duration?.ToString("hh\\:mm\\:ss", CultureInfo.InvariantCulture) ?? "-";
                 var line = $"{v.Name},{v.EnteredAt:yyyy-MM-dd HH:mm:ss},{v.LeftAt:yyyy-MM-dd HH:mm:ss},{durationFormatted},{v.EntryCount}";
                 sb.AppendLine(line);
             }
