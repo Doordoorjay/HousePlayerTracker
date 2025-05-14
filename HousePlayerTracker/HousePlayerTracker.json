@@ -1,8 +1,8 @@
 {
   "Author": "Dodoj",
   "Name": "House Player Tracker",
-  "Punchline": "Track players inside housing areas.",
-  "Description": "Tracks players in houses: see when they arrive, leave, and how many times they’ve visited. View or export logs.",
+  "Punchline": "Track players inside house areas.",
+  "Description": "Tracks players in house or zone: see when they arrive, leave, and how many times they’ve visited. View or export logs.",
   "InternalName": "house-player-tracker",
   "AssemblyVersion": "1.0.0.1",
   "DalamudApiLevel": 12,

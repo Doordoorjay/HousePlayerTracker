@@ -11,7 +11,7 @@
     <AssemblyName>HousePlayerTracker</AssemblyName>
     <RootNamespace>HousePlayerTracker</RootNamespace>
     <Version>1.0.0.1</Version>
-    <Description>Track player visited in houses</Description>
+    <Description>Track player visited in houses/zones</Description>
     <PackageProjectUrl>https://github.com/DoorDoorjay/HousePlayerTracker/</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
 

@@ -132,14 +132,14 @@ public class HPTMainWindow : Window
                     }
                     else
                     {
-                        // ✅ 修正：不要累加，而是保留最大值（或直接覆盖）
+                        // Keep Max value
                         if (entry.EnteredAt < existing.EnteredAt)
                             existing.EnteredAt = entry.EnteredAt;
 
                         if (entry.LeftAt > existing.LeftAt)
                             existing.LeftAt = entry.LeftAt;
 
-                        // ✅ 替换 entryCount 而不是累加
+                        // Replace entryCount instead of ++
                         existing.EntryCount = entry.EntryCount;
                     }
                 }
@@ -178,7 +178,7 @@ public class HPTMainWindow : Window
     {
         if (lastTerritoryId != 0 && currentTerritoryId != lastTerritoryId && isTracking && !hasNotifiedExit)
         {
-            // ✅ 标记所有玩家离开（补丁关键）
+            // Tag player leaved time
             foreach (var entry in activeVisits.Values)
             {
                 entry.LeftAt = DateTime.Now;
@@ -346,6 +346,7 @@ public class HPTMainWindow : Window
 
         ImGui.SameLine();
 
+        // CSV Exports
         if (ImGui.Button("Export CSV"))
         {
 
@@ -376,6 +377,7 @@ public class HPTMainWindow : Window
         {
             string? statusName = null;
 
+            // Sometimes user online status will be (none)
             if (player.OnlineStatus.RowId != 0)
                 statusName = player.OnlineStatus.Value.Name.ToString();
 
@@ -428,6 +430,6 @@ public class HPTMainWindow : Window
         { "Looking for Party", 61515 }, { "希望组队", 61515 },
         { "Role-playing", 61545 }, { "角色扮演中", 61545 },
         { "Camera Mode", 61546 }, { "观景模式中", 61546 },
-        { "Online", 61505 }, { "在线", 61505 }
+        { "Online", 61505 }, { "在线", 61505 } // This is basically useless but keep here for reference
     };
 }
