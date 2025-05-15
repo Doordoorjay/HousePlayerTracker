@@ -54,6 +54,12 @@ public class HPTMainWindow : Window
         currentTerritoryId = Plugin.ClientState.TerritoryType;
         ImGui.TextUnformatted($"Current Territory ID: {currentTerritoryId}");
 
+        // Warn user if they are not in the house zone whitelist
+        if (!PublicHousingZoneIds.Contains(currentTerritoryId))
+        {
+            ImGui.TextColored(new Vector4(1f, 0.6f, 0f, 1f), "Warning: You are in a public area, and it might spam the list.");
+        }
+
         CheckTrackingOutsideHousingZone();
         DrawTrackingToggle();
         HandleTerritoryChange();
@@ -64,6 +70,7 @@ public class HPTMainWindow : Window
         DrawVisitHistory();
         DrawTrackingPopup();
     }
+
 
     private void CheckTrackingOutsideHousingZone()
     {
@@ -80,7 +87,7 @@ public class HPTMainWindow : Window
         }
         if (showTrackingWarning)
         {
-            ImGui.TextColored(new Vector4(1f, 1f, 0f, 1f), "Tracking will stop after exiting this zone.");
+            ImGui.TextColored(new Vector4(1f, 1f, 0f, 1f), "Tracking will stop after exiting the zone.");
         }
     }
 
@@ -117,7 +124,7 @@ public class HPTMainWindow : Window
             {
                 Plugin.Notification.AddNotification(new Notification
                 {
-                    Content = "Stop Tracking clicked",
+                    Content = "Track stopped",
                     Type = NotificationType.Info
                 });
 
@@ -151,9 +158,10 @@ public class HPTMainWindow : Window
         }
         else
         {
-            ImGui.TextColored(new Vector4(1f, 0.5f, 0f, 1f), "Tracking Disabled");
             if (ImGui.Button("Start Tracking"))
                 isTracking = true;
+            ImGui.TextColored(new Vector4(1f, 0.5f, 0f, 1f), "Tracking Disabled");
+
         }
     }
     private void StopTracking()

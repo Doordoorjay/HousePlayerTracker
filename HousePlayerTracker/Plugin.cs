@@ -37,7 +37,7 @@ public sealed class Plugin : IDalamudPlugin
         mainWindow = new HPTMainWindow();
         windowSystem.AddWindow(mainWindow);
 
-        CommandManager.AddHandler("/housetr", new CommandInfo(OnCommand)
+        CommandManager.AddHandler("/housetrack", new CommandInfo(OnCommand)
         {
             HelpMessage = "Open House Player Tracker window"
         });
@@ -52,7 +52,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         windowSystem.RemoveAllWindows();
-        CommandManager.RemoveHandler("/housetr");
+        CommandManager.RemoveHandler("/housetrack");
         PluginInterface.UiBuilder.Draw -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= OpenConfig;
         PluginInterface.UiBuilder.OpenMainUi -= OpenMain;
