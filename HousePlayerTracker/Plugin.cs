@@ -80,6 +80,7 @@ public sealed class Plugin : IDalamudPlugin
         mainWindow.IsOpen = true;
     }
 
+    // Load housing area list
     private void LoadHousingZoneList()
     {
         var path = Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, "houseWhiteList.json");
