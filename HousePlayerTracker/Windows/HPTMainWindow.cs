@@ -24,6 +24,7 @@ public class HPTMainWindow : Window
     private bool hasNotifiedExit = false;
 
     private bool isTracking = false;
+    private bool ignoreZone = false;
     private uint currentTerritoryId = 0;
 
     private readonly Dictionary<string, VisitEntry> activeVisits = new();
@@ -115,55 +116,56 @@ public class HPTMainWindow : Window
         }
     }
 
-    private void DrawTrackingToggle()
+private void DrawTrackingToggle()
+{
+    if (isTracking)
     {
-        if (isTracking)
+        ImGui.TextColored(new Vector4(0f, 1f, 0f, 1f), "Tracking Enabled");
+        if (ImGui.Button("Stop Tracking"))
         {
-            ImGui.TextColored(new Vector4(0f, 1f, 0f, 1f), "Tracking Enabled");
-            if (ImGui.Button("Stop Tracking"))
+            Plugin.Notification.AddNotification(new Notification
             {
-                Plugin.Notification.AddNotification(new Notification
+                Content = "Track stopped",
+                Type = NotificationType.Info
+            });
+
+            foreach (var entry in activeVisits.Values)
+            {
+                entry.LeftAt ??= DateTime.Now;
+
+                var existing = visitHistory.FirstOrDefault(v => v.Name == entry.Name);
+                if (existing == null)
                 {
-                    Content = "Track stopped",
-                    Type = NotificationType.Info
-                });
-
-                foreach (var entry in activeVisits.Values)
-                {
-                    entry.LeftAt ??= DateTime.Now;
-
-                    var existing = visitHistory.FirstOrDefault(v => v.Name == entry.Name);
-                    if (existing == null)
-                    {
-                        visitHistory.Add(entry);
-                    }
-                    else
-                    {
-                        // Keep Max value
-                        if (entry.EnteredAt < existing.EnteredAt)
-                            existing.EnteredAt = entry.EnteredAt;
-
-                        if (entry.LeftAt > existing.LeftAt)
-                            existing.LeftAt = entry.LeftAt;
-
-                        // Replace entryCount instead of ++
-                        existing.EntryCount = entry.EntryCount;
-                    }
+                    visitHistory.Add(entry);
                 }
+                else
+                {
+                    if (entry.EnteredAt < existing.EnteredAt)
+                        existing.EnteredAt = entry.EnteredAt;
 
+                    if (entry.LeftAt > existing.LeftAt)
+                        existing.LeftAt = entry.LeftAt;
 
-                activeVisits.Clear();
-                StopTracking();
+                    existing.EntryCount = entry.EntryCount;
+                }
             }
-        }
-        else
-        {
-            if (ImGui.Button("Start Tracking"))
-                isTracking = true;
-            ImGui.TextColored(new Vector4(1f, 0.5f, 0f, 1f), "Tracking Disabled");
 
+            activeVisits.Clear();
+            StopTracking();
         }
     }
+    else
+    {
+        if (ImGui.Button("Start Tracking"))
+            isTracking = true;
+
+        ImGui.TextColored(new Vector4(1f, 0.5f, 0f, 1f), "Tracking Disabled");
+    }
+
+    // Toggle auto-stop tracking when leave zone?
+    ImGui.Checkbox("Do not stop tracking when changing zone", ref ignoreZone);
+}
+
     private void StopTracking()
     {
         foreach (var entry in activeVisits.Values)
@@ -184,7 +186,7 @@ public class HPTMainWindow : Window
 
     private void HandleTerritoryChange()
     {
-        if (lastTerritoryId != 0 && currentTerritoryId != lastTerritoryId && isTracking && !hasNotifiedExit)
+        if (lastTerritoryId != 0 && currentTerritoryId != lastTerritoryId && isTracking && !hasNotifiedExit && !ignoreZone)
         {
             // Tag player leaved time
             foreach (var entry in activeVisits.Values)
@@ -195,11 +197,7 @@ public class HPTMainWindow : Window
             StopTracking();
 
             hasNotifiedExit = true;
-            Plugin.Notification.AddNotification(new Notification
-            {
-                Content = "You left the zone. Tracking stopped.",
-                Type = NotificationType.Warning
-            });
+            Plugin.Chat.Print("You left the zone. Player Tracking was automatically stopped.");
         }
         else if (currentTerritoryId == lastTerritoryId)
         {
