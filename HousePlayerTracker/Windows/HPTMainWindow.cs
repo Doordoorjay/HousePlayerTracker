@@ -123,6 +123,7 @@ private void DrawTrackingToggle()
         ImGui.TextColored(new Vector4(0f, 1f, 0f, 1f), "Tracking Enabled");
         if (ImGui.Button("Stop Tracking"))
         {
+            Plugin.Chat.Print("Player tracking manually stopped.");
             Plugin.Notification.AddNotification(new Notification
             {
                 Content = "Track stopped",
@@ -158,6 +159,7 @@ private void DrawTrackingToggle()
     {
         if (ImGui.Button("Start Tracking"))
             isTracking = true;
+            Plugin.Chat.Print("Player tracking started.");
 
         ImGui.TextColored(new Vector4(1f, 0.5f, 0f, 1f), "Tracking Disabled");
     }
