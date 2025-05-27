@@ -183,7 +183,7 @@ private void DrawTrackingToggle()
         isTracking = false;
     }
 
-
+    // If player changed zone and they're in tracking status with checkbox = true
     private void HandleTerritoryChange()
     {
         if (lastTerritoryId != 0 && currentTerritoryId != lastTerritoryId && isTracking && !hasNotifiedExit && !ignoreZone)
